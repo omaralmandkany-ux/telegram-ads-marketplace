@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if false; // No deletion allowed
+    }
+    
+    // Channels collection
+    match /channels/{channelId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.ownerId == request.auth.uid || 
+         request.auth.uid in resource.data.admins);
+      allow delete: if resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Ad Requests collection
+    match /adRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        resource.data.advertiserId == request.auth.uid;
+      allow delete: if resource.data.advertiserId == request.auth.uid;
+    }
+    
+    // Deals collection
+    match /deals/{dealId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.advertiserId == request.auth.uid || 
+         resource.data.channelOwnerId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.advertiserId == request.auth.uid || 
+         resource.data.channelOwnerId == request.auth.uid);
+      allow delete: if false; // Deals cannot be deleted
+    }
+    
+    // Messages subcollection under deals
+    match /deals/{dealId}/messages/{messageId} {
+      allow read: if isAuthenticated() && 
+        (get(/databases/$(database)/documents/deals/$(dealId)).data.advertiserId == request.auth.uid || 
+         get(/databases/$(database)/documents/deals/$(dealId)).data.channelOwnerId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+    
+    // Wallets collection - read only for owners, write only by functions
+    match /wallets/{walletId} {
+      allow read: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Admin collection
+    match /admins/{adminId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Managed manually
+    }
+  }
+}

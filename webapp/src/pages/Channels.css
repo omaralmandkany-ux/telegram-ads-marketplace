@@ -1,0 +1,438 @@
+/* Channels Page Styles - Compact & Clean */
+
+.channels-page {
+    min-height: 100vh;
+    background: #0d1117;
+}
+
+/* Tabs Container */
+.tabs-container {
+    display: flex;
+    background: #161b22;
+    border-radius: 25px;
+    padding: 4px;
+    margin-bottom: 16px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 22px;
+    background: transparent;
+    color: #8b949e;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: #00aaff;
+    color: white;
+}
+
+/* Search Box */
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+
+.search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.search-box input::placeholder {
+    color: #6e7681;
+}
+
+/* Filter Row */
+.filter-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: visible;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-row::-webkit-scrollbar {
+    display: none;
+}
+
+.pill-btn {
+    padding: 8px 14px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 20px;
+    color: #8b949e;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pill-btn:hover {
+    border-color: #00aaff;
+}
+
+.pill-btn.active {
+    background: #00aaff;
+    border-color: #00aaff;
+    color: white;
+}
+
+/* Dropdown */
+.dropdown-wrapper {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 6px 0;
+    min-width: 140px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    color: #c9d1d9;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+    background: rgba(0, 170, 255, 0.1);
+    color: #00aaff;
+}
+
+.dropdown-menu button.active {
+    background: rgba(0, 170, 255, 0.15);
+    color: #00aaff;
+}
+
+/* Filter Icon Button */
+.filter-icon-btn {
+    padding: 8px 12px !important;
+}
+
+/* Filter Menu with Range Inputs */
+.filter-menu {
+    min-width: 200px;
+    padding: 12px;
+    right: 0;
+    left: auto;
+}
+
+.filter-section {
+    margin-bottom: 14px;
+}
+
+.filter-section:last-of-type {
+    margin-bottom: 12px;
+}
+
+.filter-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #8b949e;
+    margin-bottom: 8px;
+}
+
+.filter-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-inputs input {
+    flex: 1;
+    padding: 8px 10px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 13px;
+    width: 70px;
+}
+
+.filter-inputs input::placeholder {
+    color: #6e7681;
+}
+
+.filter-inputs input:focus {
+    outline: none;
+    border-color: #00aaff;
+}
+
+.filter-inputs span {
+    color: #6e7681;
+    font-size: 14px;
+}
+
+.apply-btn {
+    width: 100%;
+    padding: 10px;
+    background: #00aaff;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.apply-btn:hover {
+    background: #0099ee;
+}
+
+/* Active Filters */
+.active-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-tag {
+    padding: 4px 10px;
+    background: rgba(0, 170, 255, 0.15);
+    border-radius: 12px;
+    color: #00aaff;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.clear-btn {
+    padding: 4px 10px;
+    background: rgba(239, 68, 68, 0.15);
+    border: none;
+    border-radius: 12px;
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+/* Section Label */
+.section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6e7681;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    margin-top: 8px;
+}
+
+/* Channels List */
+.channels-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Compact Channel Card */
+.ch-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 14px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.ch-card:hover {
+    border-color: rgba(0, 170, 255, 0.4);
+}
+
+/* Avatar */
+.ch-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #059669);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    float: left;
+    margin-right: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ch-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ch-indicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    background: #00aaff;
+    border: 2px solid #161b22;
+    border-radius: 50%;
+}
+
+/* Info */
+.ch-info {
+    overflow: hidden;
+    padding-right: 80px;
+}
+
+.ch-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.ch-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.ch-badge {
+    padding: 2px 6px;
+    background: rgba(0, 170, 255, 0.15);
+    border-radius: 4px;
+    color: #00aaff;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.ch-lang {
+    color: #6e7681;
+    font-size: 12px;
+}
+
+/* Stats */
+.ch-stats {
+    display: flex;
+    gap: 20px;
+    clear: both;
+    padding-top: 4px;
+}
+
+.ch-stats span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #6e7681;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.ch-stats b {
+    color: #ffffff;
+    font-weight: 600;
+    margin-left: 2px;
+}
+
+/* Price */
+.ch-price {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    text-align: right;
+}
+
+.ch-price-amount {
+    color: #00aaff;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.ch-price-label {
+    color: #6e7681;
+    font-size: 10px;
+}
+
+/* View Button */
+.ch-view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(0, 170, 255, 0.1);
+    border-radius: 10px;
+    color: #00aaff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Request Card (My Ads) */
+.request-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.request-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.request-budget {
+    color: #00aaff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.request-status {
+    padding: 4px 8px;
+    background: rgba(245, 158, 11, 0.15);
+    border-radius: 6px;
+    color: #f59e0b;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}

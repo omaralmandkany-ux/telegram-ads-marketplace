@@ -1,0 +1,189 @@
+/* DealCard Component Styles - Matching Reference Design */
+
+.deal-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: #1a1f2a;
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.deal-item:hover {
+    border-color: rgba(0, 170, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.deal-item:active {
+    background: #242b38;
+}
+
+/* Channel Avatar */
+.deal-avatar {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 20px;
+    color: white;
+    text-transform: uppercase;
+    overflow: hidden;
+}
+
+.deal-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Channel Info */
+.deal-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.deal-channel-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.deal-channel-username {
+    font-size: 13px;
+    color: #6e7681;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Price Section */
+.deal-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.deal-price .icon {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-right: 2px;
+}
+
+.deal-price-amount {
+    font-weight: 700;
+    font-size: 16px;
+    color: #00aaff;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.deal-price-time {
+    font-size: 11px;
+    color: #6e7681;
+    white-space: nowrap;
+}
+
+/* Activity Type - Status Badges */
+.deal-activity {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    min-width: 70px;
+    text-align: center;
+}
+
+.deal-activity.activity-success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.deal-activity.activity-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.deal-activity.activity-warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.deal-activity.activity-info {
+    background: rgba(0, 170, 255, 0.15);
+    color: #00aaff;
+}
+
+/* Arrow */
+.deal-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #484f58;
+}
+
+/* Deals List Container */
+.deals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Header Section for Deals */
+.deals-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+    margin-bottom: 12px;
+}
+
+.deals-header-title {
+    font-size: 13px;
+    color: #6e7681;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Column Headers */
+.deals-columns {
+    display: flex;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #6e7681;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.deals-col-channel {
+    flex: 1;
+}
+
+.deals-col-price {
+    width: 100px;
+    text-align: center;
+}
+
+.deals-col-type {
+    width: 80px;
+    text-align: right;
+}

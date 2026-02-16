@@ -1,0 +1,24 @@
+{
+  "name": "telegram-ads-marketplace",
+  "version": "1.0.0",
+  "description": "Telegram Mini App Ads Marketplace with TON Escrow",
+  "private": true,
+  "workspaces": [
+    "functions",
+    "webapp"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=webapp",
+    "build": "npm run build --workspaces",
+    "deploy": "firebase deploy",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "emulators": "firebase emulators:start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/telegram-ads-marketplace"
+  },
+  "author": "Omar",
+  "license": "MIT"
+}
