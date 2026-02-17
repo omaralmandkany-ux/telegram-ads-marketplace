@@ -111,6 +111,10 @@ function RequestDetail() {
                 sourceId: request.id,
                 amount: request.budget.min,
                 format: request.preferredFormat,
+                // Pass request details as brief data
+                suggestedText: request.description || '',
+                suggestedImageUrl: (request as any).imageUrl || '',
+                additionalNotes: request.requirements || '',
             });
 
             if (response.success && response.data) {

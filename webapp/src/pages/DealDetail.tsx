@@ -459,28 +459,6 @@ function DealDetail() {
                                     <><Icon name="linkConnect" size={16} /> Connect Wallet to Pay</>
                                 )}
                             </button>
-
-                            <div className="text-center text-muted text-xs mb-md">— or send manually —</div>
-
-                            <div className="p-md mb-md" style={{
-                                background: 'var(--bg-secondary)',
-                                borderRadius: 'var(--radius-md)',
-                                wordBreak: 'break-all',
-                                fontFamily: 'monospace',
-                                fontSize: '12px'
-                            }}>
-                                {deal.escrowWalletAddress}
-                            </div>
-                            <button
-                                className="btn btn-secondary btn-sm btn-block"
-                                onClick={() => {
-                                    navigator.clipboard.writeText(deal.escrowWalletAddress);
-                                    hapticFeedback('light');
-                                    showSuccess('Address copied!');
-                                }}
-                            >
-                                <Icon name="copy" size={14} /> Copy Escrow Address
-                            </button>
                             <p className="text-xs text-muted text-center mt-md">
                                 Payment will be confirmed automatically.
                             </p>
@@ -529,7 +507,7 @@ function DealDetail() {
                                     {deal.brief.publishTime && (
                                         <div className="mb-sm">
                                             <label className="text-xs text-muted">Preferred Time:</label>
-                                            <div className="text-sm">{formatDate(deal.brief.publishTime)} at {formatTime(deal.brief.publishTime)}</div>
+                                            <div className="text-sm">{formatDate(deal.brief.publishTime)} at {formatTime(deal.brief.publishTime)} (UTC)</div>
                                         </div>
                                     )}
                                     {deal.brief.additionalNotes && (
@@ -720,7 +698,7 @@ function DealDetail() {
                                                 {deal.brief.publishTime && (
                                                     <div className="mb-sm">
                                                         <label className="text-xs text-muted">Preferred Publish Time:</label>
-                                                        <div className="text-sm">{formatDate(deal.brief.publishTime)} at {formatTime(deal.brief.publishTime)}</div>
+                                                        <div className="text-sm">{formatDate(deal.brief.publishTime)} at {formatTime(deal.brief.publishTime)} (UTC)</div>
                                                     </div>
                                                 )}
 
@@ -763,7 +741,7 @@ function DealDetail() {
                         <div className="card" style={{ borderColor: 'var(--accent-blue)' }}>
                             <h4 className="mb-sm"><Icon name="calendar" size={18} /> Scheduled</h4>
                             <p className="text-secondary">
-                                Post will be published on {formatDate(deal.scheduledTime)} at {formatTime(deal.scheduledTime)}
+                                Post will be published on {formatDate(deal.scheduledTime)} at {formatTime(deal.scheduledTime)} (UTC)
                             </p>
                         </div>
                     </div>
@@ -918,7 +896,7 @@ function DealDetail() {
                                 min={new Date().toISOString().slice(0, 16)}
                             />
                             <p className="text-xs text-muted mt-xs">
-                                The post will be published automatically at this time after advertiser approval.
+                                ⏰ All times are in UTC. The post will be published automatically at this time after advertiser approval.
                             </p>
                         </div>
 

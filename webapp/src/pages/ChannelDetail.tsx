@@ -935,7 +935,7 @@ function ChannelDetail() {
 
                             <div className="form-group">
                                 <label className="form-label">
-                                    <Icon name="calendar" size={14} /> Preferred Publish Time (Optional)
+                                    <Icon name="calendar" size={14} /> Preferred Publish Time - UTC (Optional)
                                 </label>
                                 <input
                                     type="datetime-local"
@@ -987,7 +987,7 @@ function ChannelDetail() {
                                 onClick={handleCreateDeal}
                                 disabled={isCreatingDeal || isUploadingImage}
                             >
-                                {isCreatingDeal ? '⏳ Processing...' : `💎 Create & Pay ${Math.round(selectedFormatData?.price || 0)} TON`}
+                                {isCreatingDeal ? '⏳ Processing...' : <><Icon name="ton" size={16} /> Create & Pay {Math.round(selectedFormatData?.price || 0)} TON</>}
                             </button>
                         </div>
                     </div>

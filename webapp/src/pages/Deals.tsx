@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../contexts/TelegramContext';
 import { api, Deal } from '../lib/api';
-import Header from '../components/Header';
 import DealCard from '../components/DealCard';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
@@ -68,7 +67,6 @@ function Deals() {
 
     return (
         <div>
-            <Header title="Deals" />
 
             <div className="container">
                 {/* Filter Tabs */}

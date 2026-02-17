@@ -3,7 +3,6 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '../contexts/TelegramContext';
 import { api, Channel, formatNumber, AdRequest } from '../lib/api';
-import Header from '../components/Header';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
 import Icon from '../components/Icon';
@@ -187,7 +186,6 @@ function Channels() {
 
     return (
         <div className="channels-page" onClick={closeAllDropdowns}>
-            <Header title="Ads Marketplace" />
 
             <div className="container">
                 {/* Tabs */}

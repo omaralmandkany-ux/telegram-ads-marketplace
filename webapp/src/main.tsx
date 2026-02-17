@@ -90,7 +90,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
                     ]
                 }}
                 actionsConfiguration={{
-                    twaReturnUrl: 'https://t.me/YourBotUsername'
+                    twaReturnUrl: 'https://t.me/p2p_adsBot/app'
                 }}
                 restoreConnection={true}
             >

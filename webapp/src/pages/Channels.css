@@ -1,4 +1,4 @@
-/* Channels Page Styles - Compact & Clean */
+/* Channels Page Styles - Modern & Premium */
 
 .channels-page {
     min-height: 100vh;
@@ -9,27 +9,29 @@
 .tabs-container {
     display: flex;
     background: #161b22;
-    border-radius: 25px;
+    border-radius: 14px;
     padding: 4px;
     margin-bottom: 16px;
+    border: 1px solid #21262d;
 }
 
 .tab-btn {
     flex: 1;
     padding: 10px 16px;
     border: none;
-    border-radius: 22px;
+    border-radius: 11px;
     background: transparent;
     color: #8b949e;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
 }
 
 .tab-btn.active {
-    background: #00aaff;
+    background: linear-gradient(135deg, #00aaff, #0088dd);
     color: white;
+    box-shadow: 0 2px 12px rgba(0, 170, 255, 0.3);
 }
 
 /* Search Box */
@@ -42,6 +44,12 @@
     border-radius: 12px;
     padding: 12px 14px;
     margin-bottom: 12px;
+    transition: border-color 0.2s ease;
+}
+
+.search-box:focus-within {
+    border-color: #00aaff;
+    box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.1);
 }
 
 .search-box input {
@@ -61,37 +69,45 @@
 .filter-row {
     display: flex;
     gap: 8px;
-    overflow-x: visible;
+    overflow: visible;
     padding-bottom: 8px;
     margin-bottom: 8px;
-    flex-wrap: wrap;
+    position: relative;
+    z-index: 100;
 }
 
 .filter-row::-webkit-scrollbar {
     display: none;
 }
 
+/* Pill Buttons - Premium Look */
 .pill-btn {
-    padding: 8px 14px;
-    background: #21262d;
+    padding: 8px 16px;
+    background: #161b22;
     border: 1px solid #30363d;
-    border-radius: 20px;
-    color: #8b949e;
+    border-radius: 22px;
+    color: #c9d1d9;
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .pill-btn:hover {
-    border-color: #00aaff;
+    border-color: rgba(0, 170, 255, 0.5);
+    background: rgba(0, 170, 255, 0.05);
+    color: #ffffff;
 }
 
 .pill-btn.active {
-    background: #00aaff;
+    background: linear-gradient(135deg, rgba(0, 170, 255, 0.15), rgba(0, 136, 221, 0.15));
     border-color: #00aaff;
-    color: white;
+    color: #00aaff;
+    box-shadow: 0 0 12px rgba(0, 170, 255, 0.1);
 }
 
 /* Dropdown */
@@ -101,66 +117,94 @@
 
 .dropdown-menu {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 6px);
     left: 0;
-    margin-top: 4px;
-    background: #21262d;
+    background: #1c2128;
     border: 1px solid #30363d;
-    border-radius: 10px;
-    padding: 6px 0;
-    min-width: 140px;
-    z-index: 100;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    border-radius: 14px;
+    padding: 6px;
+    min-width: 160px;
+    z-index: 1000;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dropdown-menu button {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     padding: 10px 14px;
     background: transparent;
     border: none;
+    border-radius: 10px;
     color: #c9d1d9;
     font-size: 13px;
     text-align: left;
     cursor: pointer;
+    transition: all 0.15s ease;
 }
 
 .dropdown-menu button:hover {
-    background: rgba(0, 170, 255, 0.1);
+    background: rgba(0, 170, 255, 0.08);
     color: #00aaff;
 }
 
 .dropdown-menu button.active {
-    background: rgba(0, 170, 255, 0.15);
+    background: rgba(0, 170, 255, 0.12);
     color: #00aaff;
+    font-weight: 600;
+}
+
+.dropdown-menu button.active::before {
+    content: '✓';
+    margin-right: 4px;
+    font-size: 11px;
 }
 
 /* Filter Icon Button */
 .filter-icon-btn {
     padding: 8px 12px !important;
+    min-width: 40px;
+    justify-content: center;
 }
 
 /* Filter Menu with Range Inputs */
 .filter-menu {
-    min-width: 200px;
-    padding: 12px;
+    min-width: 240px;
+    padding: 16px;
     right: 0;
     left: auto;
 }
 
 .filter-section {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .filter-section:last-of-type {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .filter-title {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     color: #8b949e;
     margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .filter-inputs {
@@ -171,44 +215,49 @@
 
 .filter-inputs input {
     flex: 1;
-    padding: 8px 10px;
-    background: #161b22;
+    padding: 10px 12px;
+    background: #0d1117;
     border: 1px solid #30363d;
-    border-radius: 8px;
+    border-radius: 10px;
     color: #ffffff;
     font-size: 13px;
     width: 70px;
+    transition: border-color 0.2s ease;
 }
 
 .filter-inputs input::placeholder {
-    color: #6e7681;
+    color: #484f58;
 }
 
 .filter-inputs input:focus {
     outline: none;
     border-color: #00aaff;
+    box-shadow: 0 0 0 3px rgba(0, 170, 255, 0.1);
 }
 
 .filter-inputs span {
-    color: #6e7681;
+    color: #484f58;
     font-size: 14px;
+    font-weight: 600;
 }
 
 .apply-btn {
     width: 100%;
     padding: 10px;
-    background: #00aaff;
+    background: linear-gradient(135deg, #00aaff, #0088dd);
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     color: white;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 170, 255, 0.2);
 }
 
 .apply-btn:hover {
-    background: #0099ee;
+    box-shadow: 0 4px 16px rgba(0, 170, 255, 0.35);
+    transform: translateY(-1px);
 }
 
 /* Active Filters */
@@ -221,23 +270,29 @@
 }
 
 .filter-tag {
-    padding: 4px 10px;
-    background: rgba(0, 170, 255, 0.15);
-    border-radius: 12px;
+    padding: 5px 12px;
+    background: rgba(0, 170, 255, 0.1);
+    border: 1px solid rgba(0, 170, 255, 0.2);
+    border-radius: 16px;
     color: #00aaff;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .clear-btn {
-    padding: 4px 10px;
-    background: rgba(239, 68, 68, 0.15);
-    border: none;
-    border-radius: 12px;
+    padding: 5px 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 16px;
     color: #ef4444;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
 }
 
 /* Section Label */
@@ -260,16 +315,19 @@
 /* Compact Channel Card */
 .ch-card {
     background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 14px;
-    padding: 14px;
+    border: 1px solid #21262d;
+    border-radius: 16px;
+    padding: 16px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s ease;
     position: relative;
 }
 
 .ch-card:hover {
-    border-color: rgba(0, 170, 255, 0.4);
+    border-color: rgba(0, 170, 255, 0.35);
+    background: #1c2128;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 /* Avatar */
@@ -288,6 +346,7 @@
     margin-right: 12px;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .ch-avatar img {
@@ -331,12 +390,15 @@
 }
 
 .ch-badge {
-    padding: 2px 6px;
-    background: rgba(0, 170, 255, 0.15);
-    border-radius: 4px;
+    padding: 2px 8px;
+    background: rgba(0, 170, 255, 0.1);
+    border: 1px solid rgba(0, 170, 255, 0.15);
+    border-radius: 6px;
     color: #00aaff;
     font-size: 9px;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .ch-lang {
@@ -370,14 +432,14 @@
 /* Price */
 .ch-price {
     position: absolute;
-    top: 14px;
-    right: 14px;
+    top: 16px;
+    right: 16px;
     text-align: right;
 }
 
 .ch-price-amount {
     color: #00aaff;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
 }
 
@@ -395,23 +457,36 @@
     width: 100%;
     margin-top: 12px;
     padding: 10px;
-    background: rgba(0, 170, 255, 0.1);
+    background: linear-gradient(135deg, rgba(0, 170, 255, 0.08), rgba(0, 170, 255, 0.04));
+    border: 1px solid rgba(0, 170, 255, 0.12);
     border-radius: 10px;
     color: #00aaff;
     font-size: 13px;
     font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.ch-card:hover .ch-view-btn {
+    background: linear-gradient(135deg, rgba(0, 170, 255, 0.12), rgba(0, 170, 255, 0.08));
+    border-color: rgba(0, 170, 255, 0.25);
 }
 
 /* Request Card (My Ads) */
 .request-card {
     background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 12px;
+    border: 1px solid #21262d;
+    border-radius: 14px;
     padding: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.request-card:hover {
+    border-color: rgba(0, 170, 255, 0.3);
+    background: #1c2128;
 }
 
 .request-title {
@@ -428,9 +503,10 @@
 }
 
 .request-status {
-    padding: 4px 8px;
-    background: rgba(245, 158, 11, 0.15);
-    border-radius: 6px;
+    padding: 4px 10px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    border-radius: 8px;
     color: #f59e0b;
     font-size: 11px;
     font-weight: 600;

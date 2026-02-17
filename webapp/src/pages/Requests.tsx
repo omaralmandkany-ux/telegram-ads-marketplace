@@ -5,7 +5,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTelegram } from '../contexts/TelegramContext';
 import { api, AdRequest } from '../lib/api';
 import Icon from '../components/Icon';
-import Header from '../components/Header';
 import EmptyState from '../components/EmptyState';
 import Loading from '../components/Loading';
 
@@ -40,18 +39,21 @@ function Requests() {
 
     return (
         <div>
-            <Header
-                title="Ad Requests"
-                action={{
-                    label: <><Icon name="plus" size={14} /> Create</>,
-                    onClick: () => {
-                        hapticFeedback('light');
-                        navigate('/requests/new');
-                    }
-                }}
-            />
 
             <div className="container">
+                {/* Create Button */}
+                <div className="section" style={{ display: 'flex', justifyContent: 'flex-end', paddingBottom: 0, marginBottom: 0 }}>
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => {
+                            hapticFeedback('light');
+                            navigate('/requests/new');
+                        }}
+                    >
+                        <Icon name="plus" size={14} /> Create
+                    </button>
+                </div>
+
                 {/* Filter Tabs */}
                 <div className="section">
                     <div className="flex gap-sm">

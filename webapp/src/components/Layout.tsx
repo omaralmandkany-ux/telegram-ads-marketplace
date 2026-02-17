@@ -50,8 +50,8 @@ function Layout({ children }: LayoutProps) {
                     </NavLink>
 
                     <NavLink to="/wallet" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                        <span className="nav-icon"><Icon name="wallet" size={22} /></span>
-                        <span className="nav-label">Wallet</span>
+                        <span className="nav-icon"><Icon name="user" size={22} /></span>
+                        <span className="nav-label">Profile</span>
                     </NavLink>
                 </nav>
             )}

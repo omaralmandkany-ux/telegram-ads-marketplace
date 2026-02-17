@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+
 import { useTelegram } from '../contexts/TelegramContext';
-import { api, Channel, Deal, AdRequest, formatNumber } from '../lib/api';
+import { api, Channel, Deal, AdRequest } from '../lib/api';
 import ChannelCard from '../components/ChannelCard';
 import DealCard from '../components/DealCard';
 import Loading from '../components/Loading';
 import Icon from '../components/Icon';
 
-const APP_VERSION = 'v2.3.0';
+const APP_VERSION = 'v2.4.0';
 
 function Home() {
-    const { user } = useAuth();
+
     const { hapticFeedback } = useTelegram();
     const navigate = useNavigate();
 
@@ -45,14 +45,9 @@ function Home() {
 
             // Check admin status
             try {
-                console.log('Checking admin status...');
                 const adminRes = await api.get<{ isAdmin: boolean }>('/admin/check');
-                console.log('Admin check response:', adminRes);
                 if (adminRes.success && (adminRes.data as any)?.isAdmin) {
-                    console.log('User IS admin!');
                     setIsAdmin(true);
-                } else {
-                    console.log('User is NOT admin - response:', adminRes);
                 }
             } catch (adminError) {
                 console.error('Admin check error:', adminError);
@@ -71,78 +66,118 @@ function Home() {
     return (
         <div className="container animate-fadeIn">
 
-            {/* Hero Section */}
+            {/* Ad Banner */}
             <div className="section mt-md">
-                <div className="card hero-card">
-                    <div className="flex items-center gap-md mb-md">
-                        <div className="channel-avatar" style={{ width: 48, height: 48, fontSize: 18 }}>
-                            {user?.firstName?.charAt(0) || <Icon name="user" size={18} />}
-                        </div>
-                        <div>
-                            <h3 className="text-lg">Welcome, {user?.firstName}!</h3>
-                            <p className="text-sm text-primary" style={{ opacity: 0.9 }}>
-                                Telegram Ads Marketplace
-                            </p>
-                        </div>
-                    </div>
+                <div
+                    className="card"
+                    style={{
+                        background: 'linear-gradient(135deg, #1a1c2e 0%, #2d1b4e 50%, #1a1c2e 100%)',
+                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        textAlign: 'center',
+                    }}
+                    onClick={() => {
+                        hapticFeedback('light');
+                        navigate('/channels');
+                    }}
+                >
+                    {/* Decorative glow */}
+                    <div style={{
+                        position: 'absolute',
+                        top: '-50%',
+                        left: '-50%',
+                        width: '200%',
+                        height: '200%',
+                        background: 'radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 50%)',
+                        pointerEvents: 'none',
+                    }} />
 
-                    <div className="quick-actions mt-lg">
-                        <button
-                            className="quick-action"
-                            onClick={() => {
-                                hapticFeedback('light');
-                                navigate('/channels');
-                            }}
-                        >
-                            <span className="quick-action-icon"><Icon name="megaphone" size={22} /></span>
-                            <span className="quick-action-label">Browse Channels</span>
-                        </button>
-                        <button
-                            className="quick-action"
-                            onClick={() => {
-                                hapticFeedback('light');
-                                navigate('/requests');
-                            }}
-                        >
-                            <span className="quick-action-icon"><Icon name="requests" size={22} /></span>
-                            <span className="quick-action-label">Ad Requests</span>
-                        </button>
-                        {isAdmin && (
-                            <button
-                                className="quick-action"
-                                onClick={() => {
-                                    hapticFeedback('light');
-                                    navigate('/admin');
-                                }}
-                                style={{ background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)' }}
-                            >
-                                <span className="quick-action-icon"><Icon name="admin" size={22} /></span>
-                                <span className="quick-action-label">Admin Panel</span>
-                            </button>
-                        )}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        marginBottom: '8px',
+                        position: 'relative',
+                    }}>
+                        <Icon name="megaphone" size={28} color="#a78bfa" />
+                        <span style={{
+                            fontSize: '20px',
+                            fontWeight: 700,
+                            background: 'linear-gradient(135deg, #a78bfa, #c084fc)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                            Put Your Ad Here
+                        </span>
+                    </div>
+                    <p style={{
+                        color: '#9ca3af',
+                        fontSize: '13px',
+                        margin: 0,
+                        position: 'relative',
+                    }}>
+                        Reach thousands of subscribers through Telegram channels
+                    </p>
+                    <div style={{
+                        marginTop: '14px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 20px',
+                        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                        borderRadius: '20px',
+                        color: 'white',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        position: 'relative',
+                    }}>
+                        Browse Channels <Icon name="chevronRight" size={14} />
                     </div>
                 </div>
             </div>
 
-            {/* Quick Stats */}
+            {/* Quick Actions */}
             <div className="section">
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-value">{myChannels.length}</div>
-                        <div className="stat-label">My Channels</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">{activeDeals.length}</div>
-                        <div className="stat-label">Active Deals</div>
-                    </div>
-                    <div className="stat-card">
-                        <div className="stat-value">
-                            {myChannels.reduce((sum, ch) => sum + ch.stats.subscribers, 0) > 0
-                                ? formatNumber(myChannels.reduce((sum, ch) => sum + ch.stats.subscribers, 0))
-                                : '0'}
-                        </div>
-                        <div className="stat-label">Total Reach</div>
-                    </div>
+                <div className="quick-actions">
+                    <button
+                        className="quick-action"
+                        onClick={() => {
+                            hapticFeedback('light');
+                            navigate('/channels/new');
+                        }}
+                        style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#0d1117' }}
+                    >
+                        <span className="quick-action-icon" style={{ color: '#0d1117' }}><Icon name="plus" size={22} /></span>
+                        <span className="quick-action-label" style={{ color: '#0d1117' }}>Add Channel</span>
+                    </button>
+                    <button
+                        className="quick-action"
+                        onClick={() => {
+                            hapticFeedback('light');
+                            navigate('/requests');
+                        }}
+                    >
+                        <span className="quick-action-icon"><Icon name="requests" size={22} /></span>
+                        <span className="quick-action-label">Ad Requests</span>
+                    </button>
+                    {isAdmin && (
+                        <button
+                            className="quick-action"
+                            onClick={() => {
+                                hapticFeedback('light');
+                                navigate('/admin');
+                            }}
+                            style={{ background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)' }}
+                        >
+                            <span className="quick-action-icon"><Icon name="admin" size={22} /></span>
+                            <span className="quick-action-label">Admin Panel</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -150,7 +185,9 @@ function Home() {
             <div className="section">
                 <div className="section-header">
                     <h3 className="section-title">My Channels</h3>
-                    <Link to="/my-channels" className="text-sm text-accent">View All</Link>
+                    {myChannels.length > 0 && (
+                        <Link to="/my-channels" className="text-sm text-accent">View All</Link>
+                    )}
                 </div>
 
                 {myChannels.length === 0 ? (

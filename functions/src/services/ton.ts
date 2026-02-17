@@ -279,11 +279,14 @@ export async function refundEscrow(
     advertiserAddress: string,
     amount: number
 ): Promise<{ success: boolean; error?: string }> {
+    // Use sendAll=true to send ALL balance back and destroy the escrow wallet
+    // This avoids issues where exact amount != actual balance (due to fees)
     const result = await sendTon(
         escrowWalletId,
         advertiserAddress,
-        amount,
-        `Refund for deal ${dealId}`
+        0, // Amount ignored when sendAll=true
+        `Refund for deal ${dealId}`,
+        true // sendAll = true: sends ALL remaining balance and destroys wallet
     );
 
     if (result.success) {
