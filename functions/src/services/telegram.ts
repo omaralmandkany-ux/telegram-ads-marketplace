@@ -20,27 +20,39 @@ export const bot = {
     handleUpdate: (update: any) => getBot().handleUpdate(update)
 };
 
-// Get channel info and stats
+// Get channel info and stats (MTProto primary, Bot API fallback)
 export async function getChannelInfo(channelIdOrUsername: string | number): Promise<{
-    chat: Awaited<ReturnType<typeof bot.telegram.getChat>>;
+    chat: any;
     memberCount: number;
     photoUrl?: string;
 }> {
+    // Try MTProto first
+    try {
+        const { isUserbotConfigured, userbotGetChannelInfo } = await import('./userbot');
+        if (isUserbotConfigured()) {
+            console.log('Getting channel info via MTProto...');
+            const info = await userbotGetChannelInfo(channelIdOrUsername);
+            return {
+                chat: { id: info.id, title: info.title, username: info.username, type: info.type },
+                memberCount: info.memberCount,
+                photoUrl: info.photoUrl,
+            };
+        }
+    } catch (e: any) {
+        console.log('MTProto getChannelInfo failed, trying Bot API:', e?.message);
+    }
+
+    // Fallback: Bot API
     try {
         const chat = await bot.telegram.getChat(channelIdOrUsername);
         const memberCount = await bot.telegram.getChatMembersCount(channelIdOrUsername);
-
-        // Try to get channel photo URL
         let photoUrl: string | undefined;
         try {
             if ((chat as any).photo?.big_file_id) {
                 const fileLink = await bot.telegram.getFileLink((chat as any).photo.big_file_id);
                 photoUrl = typeof fileLink === 'string' ? fileLink : fileLink.href;
             }
-        } catch (photoError) {
-            console.log('Could not fetch channel photo:', photoError);
-        }
-
+        } catch { /* ignore */ }
         return { chat, memberCount, photoUrl };
     } catch (error) {
         console.error('Error getting channel info:', error);
@@ -48,109 +60,69 @@ export async function getChannelInfo(channelIdOrUsername: string | number): Prom
     }
 }
 
-// Check if bot is admin in channel
+// Check if userbot (@PHo_iraq) or bot is admin in channel
 export async function checkBotIsAdmin(channelId: number): Promise<{
     isAdmin: boolean;
     canPost: boolean;
     canDelete: boolean;
 }> {
     try {
-        console.log(`Checking bot admin status for channel ${channelId}`);
-        const botInfo = await bot.telegram.getMe();
-        console.log(`Bot ID: ${botInfo.id}, Bot username: ${botInfo.username}`);
+        console.log(`Checking admin status for channel ${channelId} via MTProto userbot`);
 
+        // Primary: Use MTProto userbot to check
         try {
-            // First try the direct getChatMember approach
-            const member = await bot.telegram.getChatMember(channelId, botInfo.id);
-            console.log(`Bot member status: ${member.status}`);
-            console.log(`Member data:`, JSON.stringify(member, null, 2));
-
-            const isAdmin = member.status === 'administrator' || member.status === 'creator';
-
-            // For admins, can_post_messages might be undefined (meaning it's allowed)
-            // Only consider it false if explicitly set to false
-            const canPostValue = (member as any).can_post_messages;
-            const canDeleteValue = (member as any).can_delete_messages;
-
-            const canPost = isAdmin && (member.status === 'creator' || canPostValue !== false);
-            const canDelete = isAdmin && (member.status === 'creator' || canDeleteValue !== false);
-
-            console.log(`Bot admin check result - isAdmin: ${isAdmin}, canPost: ${canPost}, canDelete: ${canDelete}`);
-            console.log(`Raw values - can_post_messages: ${canPostValue}, can_delete_messages: ${canDeleteValue}`);
-            return { isAdmin, canPost, canDelete };
-        } catch (memberError: any) {
-            console.log(`getChatMember failed: ${memberError?.message}`);
-
-            // If member list is inaccessible, try getChatAdministrators as fallback
-            if (memberError?.message?.includes('member list is inaccessible')) {
-                console.log('Trying getChatAdministrators fallback...');
-                try {
-                    const admins = await bot.telegram.getChatAdministrators(channelId);
-                    console.log(`Found ${admins.length} admins in channel`);
-
-                    const botAdmin = admins.find(admin => admin.user.id === botInfo.id);
-                    if (botAdmin) {
-                        console.log(`Bot found in admin list with status: ${botAdmin.status}`);
-                        console.log(`Bot admin data:`, JSON.stringify(botAdmin, null, 2));
-
-                        const isAdmin = botAdmin.status === 'administrator' || botAdmin.status === 'creator';
-                        const canPostValue = (botAdmin as any).can_post_messages;
-                        const canDeleteValue = (botAdmin as any).can_delete_messages;
-
-                        const canPost = isAdmin && (botAdmin.status === 'creator' || canPostValue !== false);
-                        const canDelete = isAdmin && (botAdmin.status === 'creator' || canDeleteValue !== false);
-
-                        console.log(`Fallback result - isAdmin: ${isAdmin}, canPost: ${canPost}, canDelete: ${canDelete}`);
-                        return { isAdmin, canPost, canDelete };
-                    } else {
-                        console.log('Bot not found in admin list');
-                    }
-                } catch (adminError: any) {
-                    console.log(`getChatAdministrators also failed: ${adminError?.message}`);
-                }
-
-                // Third fallback: Try getChat to see if bot can at least access the channel
-                console.log('Trying getChat fallback to verify channel access...');
-                try {
-                    const chat = await bot.telegram.getChat(channelId);
-                    console.log(`getChat succeeded! Chat type: ${chat.type}, title: ${(chat as any).title}`);
-                    console.log(`Full chat data:`, JSON.stringify(chat, null, 2));
-
-                    // If we got here, the bot CAN access the channel but we couldn't verify admin status
-                    // This could mean: 1) Bot is a member but not admin, 2) Permissions issue
-                    // DO NOT assume admin - return false and let the registration show the warning
-                    console.log('Bot can access channel but could not verify admin status - returning false');
-                    return { isAdmin: false, canPost: false, canDelete: false };
-                } catch (chatError: any) {
-                    console.log(`getChat also failed: ${chatError?.message}`);
-                    console.log('Bot cannot access channel at all - likely not a member or wrong chat ID');
-                }
-            }
-
-            // All checks failed
-            console.log('All admin check methods failed');
-            return { isAdmin: false, canPost: false, canDelete: false };
+            const { checkUserbotIsAdmin } = await import('./userbot');
+            const result = await checkUserbotIsAdmin(channelId);
+            console.log(`MTProto admin check result:`, result);
+            return result;
+        } catch (mtprotoError: any) {
+            console.log(`MTProto admin check failed: ${mtprotoError?.message}, trying Bot API fallback...`);
         }
+
+        // Fallback: Try Bot API (only works if bot is member of channel)
+        try {
+            const admins = await bot.telegram.getChatAdministrators(channelId);
+            const userbotAdmin = admins.find(admin =>
+                admin.user.username?.toLowerCase() === 'pho_iraq'
+            );
+
+            if (userbotAdmin) {
+                const isAdmin = userbotAdmin.status === 'administrator' || userbotAdmin.status === 'creator';
+                const canPost = isAdmin && (userbotAdmin.status === 'creator' || (userbotAdmin as any).can_post_messages !== false);
+                const canDelete = isAdmin && (userbotAdmin.status === 'creator' || (userbotAdmin as any).can_delete_messages !== false);
+                return { isAdmin, canPost, canDelete };
+            }
+        } catch (botError: any) {
+            console.log(`Bot API fallback also failed: ${botError?.message}`);
+        }
+
+        return { isAdmin: false, canPost: false, canDelete: false };
     } catch (error: any) {
         console.error('Error in checkBotIsAdmin:', error?.message || error);
         return { isAdmin: false, canPost: false, canDelete: false };
     }
 }
 
-// Check if user is admin of channel
+// Check if user is admin of channel (MTProto primary, Bot API fallback)
 export async function checkUserIsAdmin(channelId: number, userId: number): Promise<boolean> {
+    // Try MTProto first
     try {
-        console.log(`Checking if user ${userId} is admin of channel ${channelId}`);
+        const { isUserbotConfigured, userbotCheckUserIsAdmin } = await import('./userbot');
+        if (isUserbotConfigured()) {
+            console.log(`Checking if user ${userId} is admin via MTProto...`);
+            return await userbotCheckUserIsAdmin(channelId, userId);
+        }
+    } catch (e: any) {
+        console.log('MTProto checkUserIsAdmin failed:', e?.message);
+    }
+
+    // Fallback: Bot API
+    try {
         const member = await bot.telegram.getChatMember(channelId, userId);
-        console.log(`User ${userId} status in channel: ${member.status}`);
-        const isAdmin = member.status === 'administrator' || member.status === 'creator';
-        console.log(`Is admin: ${isAdmin}`);
-        return isAdmin;
+        return member.status === 'administrator' || member.status === 'creator';
     } catch (error: any) {
         console.error('Error checking user admin status:', error?.message || error);
-        // If we can't check (e.g., user not in channel), return true for now to allow registration
-        // The channel owner verification is secondary to bot admin check
-        return true;
+        return true; // Default to true to allow registration
     }
 }
 
@@ -172,42 +144,59 @@ export interface TelegramAdminInfo {
 }
 
 export async function getChannelAdmins(channelId: number): Promise<number[]> {
+    // Try MTProto first
+    try {
+        const { isUserbotConfigured, userbotGetChannelAdmins } = await import('./userbot');
+        if (isUserbotConfigured()) {
+            return await userbotGetChannelAdmins(channelId);
+        }
+    } catch (e: any) {
+        console.log('MTProto getChannelAdmins failed:', e?.message);
+    }
+
+    // Fallback: Bot API
     try {
         const admins = await bot.telegram.getChatAdministrators(channelId);
-        return admins
-            .filter(admin => !admin.user.is_bot)
-            .map(admin => admin.user.id);
+        return admins.filter(admin => !admin.user.is_bot).map(admin => admin.user.id);
     } catch (error) {
         console.error('Error getting channel admins:', error);
         return [];
     }
 }
 
-// Get detailed channel admins with permissions
+// Get detailed channel admins with permissions (MTProto primary)
 export async function getChannelAdminsDetailed(channelId: number): Promise<TelegramAdminInfo[]> {
+    // Try MTProto first
+    try {
+        const { isUserbotConfigured, userbotGetChannelAdminsDetailed } = await import('./userbot');
+        if (isUserbotConfigured()) {
+            return await userbotGetChannelAdminsDetailed(channelId) as TelegramAdminInfo[];
+        }
+    } catch (e: any) {
+        console.log('MTProto getChannelAdminsDetailed failed:', e?.message);
+    }
+
+    // Fallback: Bot API
     try {
         const admins = await bot.telegram.getChatAdministrators(channelId);
-
-        return admins
-            .filter(admin => !admin.user.is_bot)
-            .map(admin => {
-                const isCreator = admin.status === 'creator';
-                return {
-                    telegramId: admin.user.id,
-                    username: admin.user.username,
-                    firstName: admin.user.first_name,
-                    lastName: admin.user.last_name,
-                    role: isCreator ? 'creator' : 'admin' as const,
-                    permissions: {
-                        canPostMessages: isCreator || (admin as any).can_post_messages !== false,
-                        canDeleteMessages: isCreator || (admin as any).can_delete_messages !== false,
-                        canEditMessages: isCreator || (admin as any).can_edit_messages !== false,
-                        canManageChat: isCreator || (admin as any).can_manage_chat !== false,
-                        canRestrictMembers: isCreator || (admin as any).can_restrict_members !== false,
-                        canPromoteMembers: isCreator || (admin as any).can_promote_members !== false,
-                    },
-                };
-            });
+        return admins.filter(admin => !admin.user.is_bot).map(admin => {
+            const isCreator = admin.status === 'creator';
+            return {
+                telegramId: admin.user.id,
+                username: admin.user.username,
+                firstName: admin.user.first_name,
+                lastName: admin.user.last_name,
+                role: isCreator ? 'creator' : 'admin' as const,
+                permissions: {
+                    canPostMessages: isCreator || (admin as any).can_post_messages !== false,
+                    canDeleteMessages: isCreator || (admin as any).can_delete_messages !== false,
+                    canEditMessages: isCreator || (admin as any).can_edit_messages !== false,
+                    canManageChat: isCreator || (admin as any).can_manage_chat !== false,
+                    canRestrictMembers: isCreator || (admin as any).can_restrict_members !== false,
+                    canPromoteMembers: isCreator || (admin as any).can_promote_members !== false,
+                },
+            };
+        });
     } catch (error) {
         console.error('Error getting detailed channel admins:', error);
         return [];
@@ -243,7 +232,7 @@ export async function fetchChannelStats(channelId: number): Promise<ChannelStats
     return stats;
 }
 
-// Post message to channel
+// Post message to channel (MTProto primary, Bot API fallback)
 export async function postToChannel(
     channelId: number,
     content: {
@@ -252,34 +241,34 @@ export async function postToChannel(
         buttons?: Array<{ text: string; url: string }>;
     }
 ): Promise<number> {
+    // Try MTProto first
     try {
-        // Build inline keyboard if buttons provided
+        const { isUserbotConfigured, userbotPostToChannel } = await import('./userbot');
+        if (isUserbotConfigured()) {
+            console.log('Posting to channel via MTProto userbot...');
+            return await userbotPostToChannel(channelId, content);
+        }
+    } catch (e: any) {
+        console.log('MTProto postToChannel failed, trying Bot API:', e?.message);
+    }
+
+    // Fallback: Bot API
+    try {
         const replyMarkup = content.buttons && content.buttons.length > 0
-            ? {
-                inline_keyboard: content.buttons.map(btn => [
-                    { text: btn.text, url: btn.url }
-                ])
-            }
+            ? { inline_keyboard: content.buttons.map(btn => [{ text: btn.text, url: btn.url }]) }
             : undefined;
 
         let message;
-
         if (content.mediaUrl) {
-            // Post with media
             message = await bot.telegram.sendPhoto(channelId, content.mediaUrl, {
-                caption: content.text,
-                parse_mode: 'HTML',
-                reply_markup: replyMarkup,
+                caption: content.text, parse_mode: 'HTML', reply_markup: replyMarkup,
             });
         } else {
-            // Text only post
             message = await bot.telegram.sendMessage(channelId, content.text, {
-                parse_mode: 'HTML',
-                reply_markup: replyMarkup,
+                parse_mode: 'HTML', reply_markup: replyMarkup,
                 link_preview_options: { is_disabled: false },
             });
         }
-
         return message.message_id;
     } catch (error) {
         console.error('Error posting to channel:', error);
@@ -287,130 +276,43 @@ export async function postToChannel(
     }
 }
 
-// Verify post exists and is unmodified
+// Verify post exists and is unmodified (MTProto primary, Bot API fallback)
 export async function verifyPost(
     channelId: number,
     messageId: number,
     originalContent: { text: string; mediaUrl?: string }
 ): Promise<{ exists: boolean; unmodified: boolean }> {
+    // Try MTProto first — can directly read messages
     try {
-        const bot = getBot();
-
-        // Method 1: Try to forward the message to bot's own chat (not visible to users)
-        // This is the most reliable way to check if a message exists
-        try {
-            console.log(`Verifying post ${messageId} in channel ${channelId}...`);
-
-            // Use first admin's chat for verification (bots cannot receive messages in their own chat)
-            const verificationChatId = config.adminTelegramIds[0];
-            if (!verificationChatId) {
-                console.log('No admin configured for verification, assuming post exists');
-                return { exists: true, unmodified: true };
-            }
-
-            // Forward to admin's chat (will be deleted immediately)
-            const forwardResult = await bot.telegram.forwardMessage(
-                verificationChatId, // Forward to admin's chat
-                channelId,
-                messageId
-            );
-
-            // Message exists! Now check if content was modified
-            let isUnmodified = true;
-
-            // Compare text content
-            const forwardedText = (forwardResult as any).text || (forwardResult as any).caption || '';
-            const originalText = originalContent.text || '';
-
-            // Normalize both texts for comparison (trim whitespace, normalize line breaks)
-            const normalizedForwarded = forwardedText.trim().replace(/\s+/g, ' ');
-            const normalizedOriginal = originalText.trim().replace(/\s+/g, ' ');
-
-            if (normalizedForwarded !== normalizedOriginal) {
-                console.log(`⚠️ Post ${messageId} text was MODIFIED!`);
-                console.log(`Original: "${normalizedOriginal.substring(0, 100)}..."`);
-                console.log(`Current: "${normalizedForwarded.substring(0, 100)}..."`);
-                isUnmodified = false;
-            }
-
-            // Delete the forwarded copy immediately
-            try {
-                await bot.telegram.deleteMessage(verificationChatId, forwardResult.message_id);
-            } catch {
-                // Ignore delete errors
-            }
-
-            if (isUnmodified) {
-                console.log(`✓ Post ${messageId} verified as existing and unmodified`);
-            } else {
-                console.log(`✗ Post ${messageId} exists but was MODIFIED`);
-            }
-
-            return { exists: true, unmodified: isUnmodified };
-
-        } catch (forwardError: any) {
-            const errorMessage = (forwardError.message || forwardError.description || '').toLowerCase();
-            console.log(`Forward check error: ${errorMessage}`);
-
-            // Check for clear "message not found" indicators
-            if (errorMessage.includes('message to forward not found') ||
-                errorMessage.includes('message not found') ||
-                errorMessage.includes('message_id_invalid') ||
-                errorMessage.includes('message to copy not found') ||
-                errorMessage.includes('chat not found')) {
-                console.log(`✗ Post ${messageId} was DELETED from channel ${channelId}`);
-                return { exists: false, unmodified: false };
-            }
-
-            // For other errors (e.g., rights issues), try an alternative check
-            // by copying to a different chat (the bot itself)
-            console.log(`Forward failed with: ${errorMessage}, trying alternative check...`);
+        const { isUserbotConfigured, userbotVerifyPost } = await import('./userbot');
+        if (isUserbotConfigured()) {
+            console.log(`Verifying post ${messageId} via MTProto...`);
+            return await userbotVerifyPost(channelId, messageId, originalContent);
         }
+    } catch (e: any) {
+        console.log('MTProto verifyPost failed, trying Bot API:', e?.message);
+    }
 
-        // Method 2: Fallback - try copyMessage which also fails if message doesn't exist
-        try {
-            const verificationChatId = config.adminTelegramIds[0];
-            if (!verificationChatId) {
-                console.log('No admin configured for verification fallback, assuming post exists');
-                return { exists: true, unmodified: true };
-            }
-
-            const copyResult = await bot.telegram.copyMessage(
-                verificationChatId, // Copy to admin's chat
-                channelId,
-                messageId
-            );
-
-            // Success - message exists! Delete the copy
-            try {
-                await bot.telegram.deleteMessage(verificationChatId, copyResult.message_id);
-            } catch {
-                // Ignore
-            }
-
-            console.log(`Post ${messageId} verified via copyMessage as existing`);
-            return { exists: true, unmodified: true };
-
-        } catch (copyError: any) {
-            const errorMessage = (copyError.message || copyError.description || '').toLowerCase();
-            console.log(`Copy check error: ${errorMessage}`);
-
-            if (errorMessage.includes('message to copy not found') ||
-                errorMessage.includes('message not found') ||
-                errorMessage.includes('message_id_invalid')) {
-                console.log(`✗ Post ${messageId} confirmed DELETED via copyMessage`);
-                return { exists: false, unmodified: false };
-            }
-
-            // If copy fails for other reasons (permissions, etc.), assume post exists
-            // to avoid false positive disputes
-            console.log(`Cannot verify post ${messageId} due to other error - assuming exists`);
+    // Fallback: Bot API (forward message to admin's chat)
+    try {
+        const verificationChatId = config.adminTelegramIds[0];
+        if (!verificationChatId) {
             return { exists: true, unmodified: true };
         }
 
-    } catch (error: any) {
-        console.error('Critical error in verifyPost:', error);
-        // On critical errors, assume post exists to avoid false positive disputes
+        const forwardResult = await bot.telegram.forwardMessage(verificationChatId, channelId, messageId);
+        const forwardedText = ((forwardResult as any).text || (forwardResult as any).caption || '').trim().replace(/\s+/g, ' ');
+        const originalText = (originalContent.text || '').trim().replace(/\s+/g, ' ');
+        const unmodified = forwardedText === originalText;
+
+        try { await bot.telegram.deleteMessage(verificationChatId, forwardResult.message_id); } catch { /* ignore */ }
+
+        return { exists: true, unmodified };
+    } catch (forwardError: any) {
+        const msg = (forwardError.message || '').toLowerCase();
+        if (msg.includes('message') && (msg.includes('not found') || msg.includes('invalid'))) {
+            return { exists: false, unmodified: false };
+        }
         return { exists: true, unmodified: true };
     }
 }

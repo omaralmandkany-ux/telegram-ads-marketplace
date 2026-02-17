@@ -79,8 +79,8 @@ function MyChannels() {
                                     }}>
                                         <p className={`text-sm mb-sm ${channel.botIsAdmin ? 'text-success' : 'text-warning'}`}>
                                             {channel.botIsAdmin
-                                                ? <><Icon name="checkCircle" size={14} /> Bot is admin - Channel is visible on marketplace</>
-                                                : <><Icon name="warning" size={14} /> Bot is not an admin of this channel. Add the bot as admin with posting permissions.</>}
+                                                ? <><Icon name="checkCircle" size={14} /> @PHo_iraq is admin - Channel is visible on marketplace</>
+                                                : <><Icon name="warning" size={14} /> @PHo_iraq is not an admin of this channel. Add @PHo_iraq as admin with posting permissions.</>}
                                         </p>
                                         <button
                                             className="btn btn-sm btn-secondary"
@@ -95,7 +95,7 @@ function MyChannels() {
                                                 }
                                             }}
                                         >
-                                            <Icon name="refresh" size={14} /> Check Bot Status
+                                            <Icon name="refresh" size={14} /> Check Admin Status
                                         </button>
                                     </div>
                                 </div>

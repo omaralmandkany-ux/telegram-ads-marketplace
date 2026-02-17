@@ -75,6 +75,68 @@ async function parseGraph(client: any, graph: any): Promise<any | null> {
     return null;
 }
 
+// Check if the userbot (@PHo_iraq) is admin of a channel via MTProto
+export async function checkUserbotIsAdmin(channelId: number): Promise<{
+    isAdmin: boolean;
+    canPost: boolean;
+    canDelete: boolean;
+}> {
+    try {
+        const client = await getClient();
+        const { Api } = await import('telegram');
+
+        try {
+            // Get the channel entity
+            const entity = await client.getEntity(channelId);
+
+            // Get full channel info including participant info
+            const result = await client.invoke(
+                new Api.channels.GetParticipants({
+                    channel: entity,
+                    filter: new Api.ChannelParticipantsAdmins(),
+                    offset: 0,
+                    limit: 100,
+                    hash: 0 as any,
+                })
+            );
+
+            if (result && result.participants) {
+                // Find our userbot in the admin list
+                const userbotUsername = 'PHo_iraq';
+                const users = result.users || [];
+
+                for (const participant of result.participants) {
+                    const userId = participant.userId?.valueOf();
+                    const user = users.find((u: any) => u.id?.valueOf() === userId);
+
+                    if (user && user.username?.toLowerCase() === userbotUsername.toLowerCase()) {
+                        console.log(`Userbot @${userbotUsername} found as admin via MTProto`);
+
+                        const adminRights = (participant as any).adminRights;
+                        const isCreator = participant.className === 'ChannelParticipantCreator';
+                        const canPost = isCreator || !!(adminRights?.postMessages);
+                        const canDelete = isCreator || !!(adminRights?.deleteMessages);
+
+                        await client.disconnect();
+                        return { isAdmin: true, canPost, canDelete };
+                    }
+                }
+            }
+
+            console.log('Userbot not found in admin list via MTProto');
+            await client.disconnect();
+            return { isAdmin: false, canPost: false, canDelete: false };
+        } catch (innerError: any) {
+            console.error('MTProto admin check error:', innerError?.message);
+            await client.disconnect();
+            return { isAdmin: false, canPost: false, canDelete: false };
+        }
+    } catch (error: any) {
+        console.error('Failed to connect userbot for admin check:', error?.message);
+        return { isAdmin: false, canPost: false, canDelete: false };
+    }
+}
+
 // Convert Telegram timestamp (seconds) to ISO date string
 function tsToDate(ts: number): string {
     return new Date(ts * 1000).toISOString().split('T')[0];
@@ -441,4 +503,291 @@ export function isUserbotConfigured(): boolean {
         process.env.TELEGRAM_API_HASH &&
         process.env.TELEGRAM_STRING_SESSION
     );
+}
+
+// ============================================================
+// GramJS-based Channel Operations (replaces Bot API equivalents)
+// ============================================================
+
+// Get channel info via MTProto
+export async function userbotGetChannelInfo(channelIdOrUsername: string | number): Promise<{
+    id: number;
+    title: string;
+    username?: string;
+    memberCount: number;
+    type: string;
+    photoUrl?: string;
+}> {
+    const client = await getClient();
+    try {
+        const { Api } = await import('telegram');
+        const entity = await client.getEntity(channelIdOrUsername);
+
+        // Get full channel info for member count
+        const fullChannel = await client.invoke(
+            new Api.channels.GetFullChannel({ channel: entity })
+        );
+
+        const chat = fullChannel.chats?.[0] as any;
+        const fullInfo = fullChannel.fullChat as any;
+
+        return {
+            id: chat?.id?.valueOf() || 0,
+            title: chat?.title || '',
+            username: chat?.username,
+            memberCount: fullInfo?.participantsCount || 0,
+            type: 'channel',
+            photoUrl: undefined, // Photo handling not needed for registration
+        };
+    } finally {
+        await client.disconnect();
+    }
+}
+
+// Check if a user is admin of channel via MTProto
+export async function userbotCheckUserIsAdmin(channelId: number, userId: number): Promise<boolean> {
+    const client = await getClient();
+    try {
+        const { Api } = await import('telegram');
+        const entity = await client.getEntity(channelId);
+
+        try {
+            const result = await client.invoke(
+                new Api.channels.GetParticipant({
+                    channel: entity,
+                    participant: new Api.InputPeerUser({ userId: BigInt(userId) as any, accessHash: 0 as any }),
+                })
+            );
+
+            const participant = result.participant;
+            const className = participant?.className || '';
+            return className === 'ChannelParticipantAdmin' || className === 'ChannelParticipantCreator';
+        } catch (e: any) {
+            // If can't find participant, try getting all admins
+            const result = await client.invoke(
+                new Api.channels.GetParticipants({
+                    channel: entity,
+                    filter: new Api.ChannelParticipantsAdmins(),
+                    offset: 0,
+                    limit: 100,
+                    hash: 0 as any,
+                })
+            );
+
+            if (result && result.participants) {
+                return result.participants.some((p: any) => p.userId?.valueOf() === userId);
+            }
+            return true; // Default to true if we can't check
+        }
+    } finally {
+        await client.disconnect();
+    }
+}
+
+// Get channel admin IDs via MTProto
+export async function userbotGetChannelAdmins(channelId: number): Promise<number[]> {
+    const client = await getClient();
+    try {
+        const { Api } = await import('telegram');
+        const entity = await client.getEntity(channelId);
+
+        const result = await client.invoke(
+            new Api.channels.GetParticipants({
+                channel: entity,
+                filter: new Api.ChannelParticipantsAdmins(),
+                offset: 0,
+                limit: 100,
+                hash: 0 as any,
+            })
+        );
+
+        if (!result || !result.participants) return [];
+
+        const users = result.users || [];
+        const adminIds: number[] = [];
+
+        for (const participant of result.participants) {
+            const uid = participant.userId?.valueOf();
+            if (!uid) continue;
+            // Exclude bots
+            const user = users.find((u: any) => u.id?.valueOf() === uid);
+            if (user && !(user as any).bot) {
+                adminIds.push(Number(uid));
+            }
+        }
+
+        return adminIds;
+    } catch (error: any) {
+        console.error('Error getting channel admins via MTProto:', error?.message);
+        return [];
+    } finally {
+        await client.disconnect();
+    }
+}
+
+// Get detailed channel admins via MTProto
+export async function userbotGetChannelAdminsDetailed(channelId: number): Promise<Array<{
+    telegramId: number;
+    username?: string;
+    firstName: string;
+    lastName?: string;
+    role: 'creator' | 'admin';
+    permissions: {
+        canPostMessages: boolean;
+        canDeleteMessages: boolean;
+        canEditMessages: boolean;
+        canManageChat: boolean;
+        canRestrictMembers: boolean;
+        canPromoteMembers: boolean;
+    };
+}>> {
+    const client = await getClient();
+    try {
+        const { Api } = await import('telegram');
+        const entity = await client.getEntity(channelId);
+
+        const result = await client.invoke(
+            new Api.channels.GetParticipants({
+                channel: entity,
+                filter: new Api.ChannelParticipantsAdmins(),
+                offset: 0,
+                limit: 100,
+                hash: 0 as any,
+            })
+        );
+
+        if (!result || !result.participants) return [];
+
+        const users = result.users || [];
+        const admins: any[] = [];
+
+        for (const participant of result.participants) {
+            const uid = participant.userId?.valueOf();
+            if (!uid) continue;
+            const user = users.find((u: any) => u.id?.valueOf() === uid);
+            if (!user || (user as any).bot) continue;
+
+            const isCreator = participant.className === 'ChannelParticipantCreator';
+            const rights = (participant as any).adminRights;
+
+            admins.push({
+                telegramId: Number(uid),
+                username: (user as any).username,
+                firstName: (user as any).firstName || '',
+                lastName: (user as any).lastName,
+                role: isCreator ? 'creator' : 'admin',
+                permissions: {
+                    canPostMessages: isCreator || !!(rights?.postMessages),
+                    canDeleteMessages: isCreator || !!(rights?.deleteMessages),
+                    canEditMessages: isCreator || !!(rights?.editMessages),
+                    canManageChat: isCreator || !!(rights?.manageCall),
+                    canRestrictMembers: isCreator || !!(rights?.banUsers),
+                    canPromoteMembers: isCreator || !!(rights?.addAdmins),
+                },
+            });
+        }
+
+        return admins;
+    } catch (error: any) {
+        console.error('Error getting detailed admins via MTProto:', error?.message);
+        return [];
+    } finally {
+        await client.disconnect();
+    }
+}
+
+// Post to channel via MTProto userbot
+export async function userbotPostToChannel(
+    channelId: number,
+    content: { text: string; mediaUrl?: string; buttons?: Array<{ text: string; url: string }> }
+): Promise<number> {
+    const client = await getClient();
+    try {
+        const { Api } = await import('telegram');
+        const entity = await client.getEntity(channelId);
+
+        // Build reply markup (inline buttons)
+        let replyMarkup: any = undefined;
+        if (content.buttons && content.buttons.length > 0) {
+            replyMarkup = new Api.ReplyInlineMarkup({
+                rows: content.buttons.map(btn =>
+                    new Api.KeyboardButtonRow({
+                        buttons: [new Api.KeyboardButtonUrl({ text: btn.text, url: btn.url })]
+                    })
+                )
+            });
+        }
+
+        let result: any;
+
+        if (content.mediaUrl) {
+            // Send with photo
+            result = await client.sendFile(entity, {
+                file: content.mediaUrl,
+                caption: content.text,
+                parseMode: 'html',
+                buttons: replyMarkup,
+            });
+        } else {
+            // Send text message
+            result = await client.sendMessage(entity, {
+                message: content.text,
+                parseMode: 'html',
+                buttons: replyMarkup,
+            });
+        }
+
+        return result?.id || 0;
+    } finally {
+        await client.disconnect();
+    }
+}
+
+// Verify post exists via MTProto
+export async function userbotVerifyPost(
+    channelId: number,
+    messageId: number,
+    originalContent: { text: string; mediaUrl?: string }
+): Promise<{ exists: boolean; unmodified: boolean }> {
+    const client = await getClient();
+    try {
+        const { Api } = await import('telegram');
+        const entity = await client.getEntity(channelId);
+
+        // Try to get the specific message
+        const result = await client.invoke(
+            new Api.channels.GetMessages({
+                channel: entity,
+                id: [new Api.InputMessageID({ id: messageId })],
+            })
+        );
+
+        if (!result || !result.messages || result.messages.length === 0) {
+            return { exists: false, unmodified: false };
+        }
+
+        const msg = result.messages[0] as any;
+
+        // MessageEmpty means deleted
+        if (msg.className === 'MessageEmpty' || !msg.message) {
+            return { exists: false, unmodified: false };
+        }
+
+        // Check if content matches
+        const currentText = (msg.message || '').trim().replace(/\s+/g, ' ');
+        const originalText = (originalContent.text || '').trim().replace(/\s+/g, ' ');
+        const unmodified = currentText === originalText;
+
+        if (!unmodified) {
+            console.log(`Post ${messageId} text was modified`);
+        }
+
+        return { exists: true, unmodified };
+    } catch (error: any) {
+        console.error('Error verifying post via MTProto:', error?.message);
+        // On error, assume exists to avoid false disputes
+        return { exists: true, unmodified: true };
+    } finally {
+        await client.disconnect();
+    }
 }
