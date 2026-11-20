@@ -23,28 +23,58 @@ function getTonWeb(): any {
     return _tonweb;
 }
 
-// Simple encryption for storing private keys
-// In production, use Firebase Secret Manager or KMS
-const RAW_ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-encryption-key-32bytes!!';
-// Derive a proper 32-byte key using SHA-256 hash (handles any input length)
-const ENCRYPTION_KEY = crypto.createHash('sha256').update(RAW_ENCRYPTION_KEY).digest();
+// Encryption for storing escrow private keys in Firestore.
+// SECURITY: ENCRYPTION_KEY must be set (functions/.env or Secret Manager).
+// The old hardcoded fallback key is public (it was in this public repo), so it is
+// only used to DECRYPT wallets created before this fix, never to encrypt new ones.
+const LEGACY_DEFAULT_ENCRYPTION_KEY = 'default-encryption-key-32bytes!!';
+
+function deriveKey(raw: string): Buffer {
+    // Derive a proper 32-byte key using SHA-256 hash (handles any input length)
+    return crypto.createHash('sha256').update(raw).digest();
+}
+
+function getEncryptionKey(): Buffer {
+    const raw = process.env.ENCRYPTION_KEY;
+    if (!raw || raw === LEGACY_DEFAULT_ENCRYPTION_KEY) {
+        throw new Error('ENCRYPTION_KEY is not set (or is the public default). Set a long random value before creating wallets.');
+    }
+    return deriveKey(raw);
+}
 
 function encrypt(text: string): string {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    const cipher = crypto.createCipheriv('aes-256-cbc', getEncryptionKey(), iv);
     let encrypted = cipher.update(text);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
-function decrypt(text: string): string {
+function decryptWithKey(text: string, key: Buffer): string {
     const parts = text.split(':');
     const iv = Buffer.from(parts.shift()!, 'hex');
     const encryptedText = Buffer.from(parts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
     let decrypted = decipher.update(encryptedText);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
     return decrypted.toString();
+}
+
+// Decrypt a wallet secret key and check it really belongs to the wallet's public key
+// (ed25519 secret key = 32-byte seed + 32-byte public key).
+function decryptSecretKeyHex(encrypted: string, publicKeyHex: string): string {
+    const candidates: Buffer[] = [];
+    if (process.env.ENCRYPTION_KEY) candidates.push(deriveKey(process.env.ENCRYPTION_KEY));
+    candidates.push(deriveKey(LEGACY_DEFAULT_ENCRYPTION_KEY));
+    for (const key of candidates) {
+        try {
+            const hex = decryptWithKey(encrypted, key);
+            if (hex.toLowerCase().endsWith(publicKeyHex.toLowerCase())) {
+                return hex;
+            }
+        } catch { /* try next key */ }
+    }
+    throw new Error('Unable to decrypt wallet key (wrong ENCRYPTION_KEY?)');
 }
 
 // Generate a new wallet
@@ -155,7 +185,7 @@ export async function sendTon(
         const wallet = walletDoc.data() as Wallet;
 
         // Decrypt secret key
-        const secretKeyHex = decrypt(wallet.encryptedSecretKey);
+        const secretKeyHex = decryptSecretKeyHex(wallet.encryptedSecretKey, wallet.publicKey);
         const secretKey = TonWeb.utils.hexToBytes(secretKeyHex);
         const publicKey = TonWeb.utils.hexToBytes(wallet.publicKey);
 
