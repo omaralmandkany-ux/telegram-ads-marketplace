@@ -42,3 +42,6 @@ coverage/
 *.pem
 *.key
 service-account*.json
+
+# Vite temp files (contain local machine paths)
+*.timestamp-*.mjs

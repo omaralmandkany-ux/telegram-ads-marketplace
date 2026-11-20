@@ -1,8 +1,25 @@
 // Configuration and constants
 
+// Secrets must come from the environment (functions/.env, which is git-ignored,
+// or Firebase/Google Secret Manager). Never hardcode them in source code.
+function requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(
+            `Missing required environment variable ${name}. ` +
+            `Set it in functions/.env (not committed) or as a Firebase secret before deploying.`
+        );
+    }
+    return value;
+}
+
 export const config = {
-    // Telegram
-    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || '8554580667:AAGa4Qb5q-RK24BfPG_K1np_qoBJPfpG0F0',
+    // Telegram (read lazily so a missing value fails with a clear error at use time)
+    get telegramBotToken(): string {
+        return requireEnv('TELEGRAM_BOT_TOKEN');
+    },
+    // Optional: secret_token passed to setWebhook; when set, webhook calls without it are rejected
+    telegramWebhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET || '',
 
     // Firebase
     firebaseProjectId: process.env.FIREBASE_PROJECT_ID || 'telegramp2p-9a891',
