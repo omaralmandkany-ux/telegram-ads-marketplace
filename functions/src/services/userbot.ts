@@ -577,7 +577,7 @@ export async function userbotCheckUserIsAdmin(channelId: number, userId: number)
             if (result && result.participants) {
                 return result.participants.some((p: any) => p.userId?.valueOf() === userId);
             }
-            return true; // Default to true if we can't check
+            return false; // SECURITY: fail closed if we can't verify
         }
     } finally {
         await client.disconnect();

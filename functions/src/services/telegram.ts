@@ -122,7 +122,8 @@ export async function checkUserIsAdmin(channelId: number, userId: number): Promi
         return member.status === 'administrator' || member.status === 'creator';
     } catch (error: any) {
         console.error('Error checking user admin status:', error?.message || error);
-        return true; // Default to true to allow registration
+        // SECURITY: fail closed - if we cannot verify admin rights, deny.
+        return false;
     }
 }
 
@@ -348,27 +349,18 @@ export async function sendNotification(
 }
 
 // Validate Telegram WebApp init data
+// https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+// SECURITY: never accept unsigned or mis-signed data - doing so lets anyone
+// impersonate any Telegram user (including admins).
+const INIT_DATA_MAX_AGE_SECONDS = 24 * 60 * 60;
+
 export function validateWebAppData(initData: string): { valid: boolean; userId?: number } {
     try {
-        console.log('Validating initData:', initData.substring(0, 100) + '...');
-
         const crypto = require('crypto');
         const params = new URLSearchParams(initData);
         const hash = params.get('hash');
 
-        if (!hash) {
-            console.log('No hash provided in init data');
-            // For development: try to extract user from data anyway
-            const userParam = params.get('user');
-            if (userParam) {
-                try {
-                    const user = JSON.parse(userParam);
-                    console.log('Dev mode: extracted user without hash validation:', user.id);
-                    return { valid: true, userId: user.id };
-                } catch (e) {
-                    console.log('Failed to parse user param');
-                }
-            }
+        if (!hash || !/^[0-9a-f]{64}$/i.test(hash)) {
             return { valid: false };
         }
 
@@ -376,7 +368,7 @@ export function validateWebAppData(initData: string): { valid: boolean; userId?:
 
         // Sort parameters
         const dataCheckString = Array.from(params.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
+            .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
             .map(([key, value]) => `${key}=${value}`)
             .join('\n');
 
@@ -387,39 +379,36 @@ export function validateWebAppData(initData: string): { valid: boolean; userId?:
             .digest();
 
         // Calculate hash
-        const calculatedHash = crypto
+        const calculatedHash: Buffer = crypto
             .createHmac('sha256', secretKey)
             .update(dataCheckString)
-            .digest('hex');
+            .digest();
 
-        console.log('Hash match:', calculatedHash === hash);
+        const providedHash = Buffer.from(hash, 'hex');
+        if (providedHash.length !== calculatedHash.length ||
+            !crypto.timingSafeEqual(providedHash, calculatedHash)) {
+            console.warn('Rejected initData: invalid hash');
+            return { valid: false };
+        }
 
-        if (calculatedHash !== hash) {
-            // Try alternate validation without strict hash check for development
-            console.log('Hash mismatch, trying fallback extraction');
-            const userParam = params.get('user');
-            if (userParam) {
-                try {
-                    const user = JSON.parse(userParam);
-                    console.log('Fallback: extracted user ID:', user.id);
-                    // Allow in development - remove this for production!
-                    return { valid: true, userId: user.id };
-                } catch (e) {
-                    console.log('Fallback failed to parse user');
-                }
-            }
+        // Reject stale init data (replay protection)
+        const authDate = parseInt(params.get('auth_date') || '0', 10);
+        const now = Math.floor(Date.now() / 1000);
+        if (!authDate || now - authDate > INIT_DATA_MAX_AGE_SECONDS || authDate - now > 300) {
+            console.warn('Rejected initData: auth_date expired or invalid');
             return { valid: false };
         }
 
         // Extract user ID
         const userParam = params.get('user');
-        if (userParam) {
-            const user = JSON.parse(userParam);
-            console.log('Validated user ID:', user.id);
-            return { valid: true, userId: user.id };
+        if (!userParam) {
+            return { valid: false };
         }
-
-        return { valid: true };
+        const user = JSON.parse(userParam);
+        if (typeof user?.id !== 'number') {
+            return { valid: false };
+        }
+        return { valid: true, userId: user.id };
     } catch (error) {
         console.error('Error validating WebApp data:', error);
         return { valid: false };
