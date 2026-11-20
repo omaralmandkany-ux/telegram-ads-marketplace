@@ -4,8 +4,8 @@ import { Request, Response } from 'express';
 import { db, Timestamp, hoursFromNow } from '../firebase';
 import { collections, config, dealStatusTransitions, tonAmounts } from '../config';
 import { Deal, User, Channel, AdRequest, Message, Wallet, DealStatus, AdBrief, CreativeSubmission } from '../types';
-import { sendNotification, checkUserIsAdmin } from '../services/telegram';
-import { generateWallet, formatAddress, getWalletBalance, checkIncomingPayment } from '../services/ton';
+import { sendNotification, checkUserIsAdmin, escapeHtml } from '../services/telegram';
+import { generateWallet, formatAddress, getWalletBalance, checkIncomingPayment, isValidTonAddress } from '../services/ton';
 import { v4 as uuidv4 } from 'uuid';
 
 // Create a new deal
@@ -16,7 +16,7 @@ export async function createDeal(req: Request, res: Response): Promise<void> {
             channelId,
             sourceType,
             sourceId,
-            amount,
+            amount: rawAmount,
             format,
             postDuration,
             scheduledTime,
@@ -29,12 +29,18 @@ export async function createDeal(req: Request, res: Response): Promise<void> {
             callToAction,
             publishWithImage,
         } = req.body;
+        const amount = Number(rawAmount);
 
-        if (!channelId || !sourceType || !amount) {
+        if (!channelId || !sourceType || !rawAmount) {
             res.status(400).json({
                 success: false,
                 error: 'channelId, sourceType, and amount are required',
             });
+            return;
+        }
+
+        if (!Number.isFinite(amount)) {
+            res.status(400).json({ success: false, error: 'amount must be a number' });
             return;
         }
 
@@ -68,6 +74,19 @@ export async function createDeal(req: Request, res: Response): Promise<void> {
                 res.status(400).json({
                     success: false,
                     error: 'You cannot create a deal with your own channel',
+                });
+                return;
+            }
+
+            // SECURITY: the amount comes from the client, so make sure it is not
+            // below the channel's own listed price for this format.
+            const pricingAny: any = channel.pricing || {};
+            const fmt = format || 'post';
+            const listedPrice = Number(pricingAny[fmt]?.price ?? pricingAny[`${fmt}Price`]);
+            if (Number.isFinite(listedPrice) && listedPrice > 0 && amount < listedPrice - 1e-9) {
+                res.status(400).json({
+                    success: false,
+                    error: `Amount is below the channel price (${listedPrice} TON)`,
                 });
                 return;
             }
@@ -312,30 +331,43 @@ export async function checkPaymentStatus(req: Request, res: Response): Promise<v
             return;
         }
 
-        // Check payment on blockchain
-        const payment = await checkIncomingPayment(
-            deal.escrowWalletAddress,
-            deal.amount,
-            deal.createdAt.toMillis()
-        );
-
-        // Also check balance directly
+        // SECURITY: confirm payment from the escrow wallet's real on-chain balance.
+        // An incoming transaction alone is not proof of payment (e.g. a bounceable
+        // transfer to the undeployed escrow wallet bounces back to the sender but
+        // still shows up as an incoming transaction with a value).
         const balance = await getWalletBalance(deal.escrowWalletAddress);
 
-        if (payment.received || balance >= deal.amount * 0.99) {
-            const receivedAmount = payment.received ? payment.amount : balance;
+        if (balance >= deal.amount * 0.99) {
+            const receivedAmount = balance;
 
-            // Save advertiser's wallet address for future refunds
             const updateData: any = {
                 status: 'creative_pending',
                 escrowBalance: receivedAmount,
                 lastActivityAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             };
-            if (advertiserWalletAddress) {
-                updateData.advertiserWalletAddress = advertiserWalletAddress;
+            // Save advertiser's wallet address for future refunds - only the
+            // advertiser may set it, only once, and it must look like a TON address.
+            if (advertiserWalletAddress &&
+                deal.advertiserId === user.id &&
+                !deal.advertiserWalletAddress &&
+                isValidTonAddress(String(advertiserWalletAddress))) {
+                updateData.advertiserWalletAddress = String(advertiserWalletAddress);
             }
-            await dealDoc.ref.update(updateData);
+
+            // Only advance once, even if several checks run at the same time
+            const advanced = await db.runTransaction(async (tx) => {
+                const fresh = await tx.get(dealDoc.ref);
+                if (!fresh.exists || (fresh.data() as Deal).status !== 'pending_payment') {
+                    return false;
+                }
+                tx.update(dealDoc.ref, updateData);
+                return true;
+            });
+            if (!advanced) {
+                res.json({ success: true, data: { status: 'creative_pending', paymentReceived: true, balance } });
+                return;
+            }
 
             // Notify channel owner
             const channelOwner = await db.collection(collections.users).doc(deal.channelOwnerId).get();
@@ -836,7 +868,7 @@ export async function sendDealMessage(req: Request, res: Response): Promise<void
         const otherUser = otherUserDoc.data() as User;
         await sendNotification(
             otherUser.telegramId,
-            `💬 <b>New Message</b>\n\nDeal #${deal.id.slice(0, 8)}\n\n${user.firstName}: ${text.slice(0, 100)}${text.length > 100 ? '...' : ''}`,
+            `💬 <b>New Message</b>\n\nDeal #${deal.id.slice(0, 8)}\n\n${escapeHtml(user.firstName)}: ${escapeHtml(String(text).slice(0, 100))}${String(text).length > 100 ? '...' : ''}`,
             [{ text: '💬 Reply', url: `${config.appUrl}/deals/${deal.id}` }]
         );
     }
@@ -1002,7 +1034,7 @@ export async function rejectDeal(req: Request, res: Response): Promise<void> {
 
         await sendNotification(
             advertiser.telegramId,
-            `❌ <b>Deal Rejected</b>\n\nChannel: ${channel?.title || 'Unknown'}\n${reason ? `Reason: ${reason}` : ''}`,
+            `❌ <b>Deal Rejected</b>\n\nChannel: ${channel?.title || 'Unknown'}\n${reason ? `Reason: ${escapeHtml(reason)}` : ''}`,
             []
         );
     }
@@ -1062,7 +1094,7 @@ export async function requestCreativeRevision(req: Request, res: Response): Prom
         const owner = ownerDoc.data() as User;
         await sendNotification(
             owner.telegramId,
-            `✏️ <b>Creative Revision Requested</b>\n\nDeal #${deal.id.slice(0, 8)}\n\nFeedback: ${feedback}\n\nPlease submit a revised version.`,
+            `✏️ <b>Creative Revision Requested</b>\n\nDeal #${deal.id.slice(0, 8)}\n\nFeedback: ${escapeHtml(feedback)}\n\nPlease submit a revised version.`,
             [{ text: '✏️ Edit Creative', url: `${config.appUrl}/deals/${deal.id}` }]
         );
     }

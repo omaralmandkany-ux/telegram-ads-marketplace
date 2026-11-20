@@ -17,21 +17,28 @@ export async function checkPendingPayments(): Promise<void> {
     for (const doc of pendingDeals.docs) {
         const deal = doc.data() as Deal;
 
-        // Check if payment received
-        const payment = await checkIncomingPayment(
-            deal.escrowWalletAddress,
-            deal.amount,
-            deal.createdAt.toMillis()
-        );
+        // SECURITY: confirm payment from the escrow wallet's real balance,
+        // not from the presence of an incoming transaction (bounced transfers
+        // to the undeployed escrow wallet would otherwise count as paid).
+        const balance = await getWalletBalance(deal.escrowWalletAddress);
+        const payment = { received: balance >= deal.amount * 0.99, amount: balance };
 
         if (payment.received) {
-            // Update deal status
-            await doc.ref.update({
-                status: 'creative_pending',
-                escrowBalance: payment.amount,
-                lastActivityAt: Timestamp.now(),
-                updatedAt: Timestamp.now(),
+            // Update deal status (only if still pending_payment)
+            const advanced = await db.runTransaction(async (tx) => {
+                const fresh = await tx.get(doc.ref);
+                if (!fresh.exists || (fresh.data() as Deal).status !== 'pending_payment') {
+                    return false;
+                }
+                tx.update(doc.ref, {
+                    status: 'creative_pending',
+                    escrowBalance: payment.amount,
+                    lastActivityAt: Timestamp.now(),
+                    updatedAt: Timestamp.now(),
+                });
+                return true;
             });
+            if (!advanced) continue;
 
             // Notify channel owner
             const channelOwner = await db.collection(collections.users).doc(deal.channelOwnerId).get();

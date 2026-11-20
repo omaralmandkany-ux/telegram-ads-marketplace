@@ -4,7 +4,7 @@ import { Router, Request, Response } from 'express';
 import { db, Timestamp } from '../firebase';
 import { collections, config } from '../config';
 import { Deal, User, Channel } from '../types';
-import { sendNotification } from '../services/telegram';
+import { sendNotification, escapeHtml } from '../services/telegram';
 import { releaseEscrow, refundEscrow, sendTon, getWalletBalance } from '../services/ton';
 
 const router = Router();
@@ -208,7 +208,7 @@ router.post('/disputes/:dealId/resolve', isAdmin, async (req: Request, res: Resp
             if (advertiser) {
                 await sendNotification(
                     advertiser.telegramId,
-                    `✅ <b>Dispute Resolved - Refund</b>\n\nYour dispute for deal #${dealId.slice(0, 8)} has been resolved in your favor.\n\nThe ${deal.amount} TON will be refunded to you.\n\n${reason ? `Reason: ${reason}` : ''}`,
+                    `✅ <b>Dispute Resolved - Refund</b>\n\nYour dispute for deal #${dealId.slice(0, 8)} has been resolved in your favor.\n\nThe ${deal.amount} TON will be refunded to you.\n\n${reason ? `Reason: ${escapeHtml(reason)}` : ''}`,
                     [{ text: '👁 View Deal', url: `${config.appUrl}/deals/${dealId}` }]
                 );
             }
@@ -217,7 +217,7 @@ router.post('/disputes/:dealId/resolve', isAdmin, async (req: Request, res: Resp
             if (channelOwner) {
                 await sendNotification(
                     channelOwner.telegramId,
-                    `❌ <b>Dispute Resolved - Refund</b>\n\nThe dispute for deal #${dealId.slice(0, 8)} has been resolved.\n\nThe funds have been refunded to the advertiser.\n\n${reason ? `Reason: ${reason}` : ''}`,
+                    `❌ <b>Dispute Resolved - Refund</b>\n\nThe dispute for deal #${dealId.slice(0, 8)} has been resolved.\n\nThe funds have been refunded to the advertiser.\n\n${reason ? `Reason: ${escapeHtml(reason)}` : ''}`,
                     [{ text: '👁 View Deal', url: `${config.appUrl}/deals/${dealId}` }]
                 );
             }
@@ -272,7 +272,7 @@ router.post('/disputes/:dealId/resolve', isAdmin, async (req: Request, res: Resp
             if (channelOwner) {
                 await sendNotification(
                     channelOwner.telegramId,
-                    `✅ <b>Dispute Resolved - Payment Released</b>\n\nThe dispute for deal #${dealId.slice(0, 8)} has been resolved in your favor.\n\nThe ${deal.amount} TON has been released to you.\n\n${reason ? `Reason: ${reason}` : ''}`,
+                    `✅ <b>Dispute Resolved - Payment Released</b>\n\nThe dispute for deal #${dealId.slice(0, 8)} has been resolved in your favor.\n\nThe ${deal.amount} TON has been released to you.\n\n${reason ? `Reason: ${escapeHtml(reason)}` : ''}`,
                     [{ text: '👁 View Deal', url: `${config.appUrl}/deals/${dealId}` }]
                 );
             }
@@ -281,7 +281,7 @@ router.post('/disputes/:dealId/resolve', isAdmin, async (req: Request, res: Resp
             if (advertiser) {
                 await sendNotification(
                     advertiser.telegramId,
-                    `ℹ️ <b>Dispute Resolved</b>\n\nThe dispute for deal #${dealId.slice(0, 8)} has been resolved.\n\nThe funds have been released to the channel owner.\n\n${reason ? `Reason: ${reason}` : ''}`,
+                    `ℹ️ <b>Dispute Resolved</b>\n\nThe dispute for deal #${dealId.slice(0, 8)} has been resolved.\n\nThe funds have been released to the channel owner.\n\n${reason ? `Reason: ${escapeHtml(reason)}` : ''}`,
                     [{ text: '👁 View Deal', url: `${config.appUrl}/deals/${dealId}` }]
                 );
             }

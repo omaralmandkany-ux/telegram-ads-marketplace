@@ -168,6 +168,18 @@ export const telegramWebhook = functions.https.onRequest(async (req, res) => {
         res.status(405).send('Method not allowed');
         return;
     }
+    // SECURITY: only accept updates that really come from Telegram.
+    // Set TELEGRAM_WEBHOOK_SECRET and pass the same value as secret_token to setWebhook.
+    const expectedSecret = config.telegramWebhookSecret;
+    if (expectedSecret) {
+        const got = String(req.get('X-Telegram-Bot-Api-Secret-Token') || '');
+        if (got !== expectedSecret) {
+            res.status(401).send('Unauthorized');
+            return;
+        }
+    } else {
+        console.warn('TELEGRAM_WEBHOOK_SECRET is not set - webhook requests are not authenticated!');
+    }
     await handleWebhook(req, res);
 });
 
