@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { db, Timestamp, hoursFromNow } from '../firebase';
 import { collections, config, dealStatusTransitions, tonAmounts } from '../config';
 import { Deal, User, Channel, AdRequest, Message, Wallet, DealStatus, AdBrief, CreativeSubmission } from '../types';
-import { sendNotification, checkUserIsAdmin } from '../services/telegram';
+import { sendNotification, checkUserIsAdmin, escapeHtml } from '../services/telegram';
 import { generateWallet, formatAddress, getWalletBalance, checkIncomingPayment, isValidTonAddress } from '../services/ton';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -868,7 +868,7 @@ export async function sendDealMessage(req: Request, res: Response): Promise<void
         const otherUser = otherUserDoc.data() as User;
         await sendNotification(
             otherUser.telegramId,
-            `💬 <b>New Message</b>\n\nDeal #${deal.id.slice(0, 8)}\n\n${user.firstName}: ${text.slice(0, 100)}${text.length > 100 ? '...' : ''}`,
+            `💬 <b>New Message</b>\n\nDeal #${deal.id.slice(0, 8)}\n\n${escapeHtml(user.firstName)}: ${escapeHtml(String(text).slice(0, 100))}${String(text).length > 100 ? '...' : ''}`,
             [{ text: '💬 Reply', url: `${config.appUrl}/deals/${deal.id}` }]
         );
     }
@@ -1034,7 +1034,7 @@ export async function rejectDeal(req: Request, res: Response): Promise<void> {
 
         await sendNotification(
             advertiser.telegramId,
-            `❌ <b>Deal Rejected</b>\n\nChannel: ${channel?.title || 'Unknown'}\n${reason ? `Reason: ${reason}` : ''}`,
+            `❌ <b>Deal Rejected</b>\n\nChannel: ${channel?.title || 'Unknown'}\n${reason ? `Reason: ${escapeHtml(reason)}` : ''}`,
             []
         );
     }
@@ -1094,7 +1094,7 @@ export async function requestCreativeRevision(req: Request, res: Response): Prom
         const owner = ownerDoc.data() as User;
         await sendNotification(
             owner.telegramId,
-            `✏️ <b>Creative Revision Requested</b>\n\nDeal #${deal.id.slice(0, 8)}\n\nFeedback: ${feedback}\n\nPlease submit a revised version.`,
+            `✏️ <b>Creative Revision Requested</b>\n\nDeal #${deal.id.slice(0, 8)}\n\nFeedback: ${escapeHtml(feedback)}\n\nPlease submit a revised version.`,
             [{ text: '✏️ Edit Creative', url: `${config.appUrl}/deals/${deal.id}` }]
         );
     }

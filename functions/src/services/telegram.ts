@@ -318,6 +318,14 @@ export async function verifyPost(
     }
 }
 
+// Escape user-supplied text before putting it in a parse_mode: 'HTML' message
+export function escapeHtml(text: unknown): string {
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 // Send notification to user
 export async function sendNotification(
     userId: number,

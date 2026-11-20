@@ -406,7 +406,7 @@ function setupBotHandlers(bot: Telegraf): void {
             recipient.telegramId,
             `💬 <b>Message from ${senderRole}</b>\n` +
             `<i>Deal #${deal.id.slice(0, 8)}</i>\n\n` +
-            `${text}`,
+            `${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}`,
             [
                 { text: '↩️ Reply', url: `https://t.me/${botUsername}?start=msg_${deal.id}` },
                 { text: '📋 View Deal', url: `${config.appUrl}/deals/${deal.id}` },
